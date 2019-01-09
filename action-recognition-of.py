@@ -1,9 +1,12 @@
+import math
+import os
+
 import cv2 as cv
 import numpy as numpy
 import matplotlib.pyplot as mpl
 
-import math
-import os
+from sklearn.decomposition import PCA
+from sklearn.preprocessing import StandardScaler
 
 #	Checks if the given angle is inside the 1st or 3rd quadrant.
 def isOnLeftHandSide(degree):
@@ -41,66 +44,77 @@ def binBoundaries(numberOfBins):
 		binValues.append(boundary)
 	return binValues
 
-# Main
+bendTrainingpath =  "dataset/training/bend"
+jackTrainingpath = "dataset/training/jack"
+jumpTrainingpath = "dataset/training/jump"
+pjumpTrainingpath = "dataset/training/pjump"
+runTrainingpath = "dataset/training/run"
+sideTrainingpath = "dataset/training/side"
+skipTrainingpath = "dataset/training/skip"
+walkTrainingpath = "dataset/training/walk"
+wave1Trainingpath = "dataset/training/wave1"
+wave2Trainingpath = "dataset/training/wave2"
 
+bendTrainingpaths = os.listdir(bendTrainingpath)
+jackTrainingpaths = os.listdir(jackTrainingpath)
+jumpTrainingpaths = os.listdir(jumpTrainingpath)
+pjumpTrainingpaths = os.listdir(pjumpTrainingpath)
+runTrainingpaths = os.listdir(runTrainingpath)
+sideTrainingpaths = os.listdir(sideTrainingpath)
+skipTrainingpaths = os.listdir(skipTrainingpath)
+walkTrainingpaths = os.listdir(walkTrainingpath)
+wave1Trainingpaths = os.listdir(wave1Trainingpath)
+wave2Trainingpaths = os.listdir(wave2Trainingpath)
+
+trainingPaths = []
+
+trainingPaths.append(bendTrainingpaths)
+trainingPaths.append(jackTrainingpaths)
+trainingPaths.append(jumpTrainingpaths)
+trainingPaths.append(pjumpTrainingpaths)
+trainingPaths.append(runTrainingpaths)
+trainingPaths.append(sideTrainingpaths)
+trainingPaths.append(skipTrainingpaths)
+trainingPaths.append(walkTrainingpaths)
+trainingPaths.append(wave1Trainingpaths)
+trainingPaths.append(wave2Trainingpaths)
+
+for path in trainingPaths:
+	path.remove(".DS_Store")
+
+# Main
 numberOfBins = 32
 boundaries = binBoundaries(numberOfBins)
 bins = numpy.zeros(numberOfBins)
-hoof = []
+tempMeanHoofs = []
 
-cap = cv.VideoCapture("dataset/run/daria_run.avi")
-ret, frame1 = cap.read()
-prvsImage = cv.cvtColor(frame1,cv.COLOR_BGR2GRAY)
+for path in runTrainingpaths:
+	cap = cv.VideoCapture(runTrainingpath+"/"+path)
+	print(runTrainingpath+"/"+path)
+	ret, frame1 = cap.read()
+	prvsImage = cv.cvtColor(frame1,cv.COLOR_BGR2GRAY)
 
-hsv = numpy.zeros_like(frame1)
-hsv[...,1] = 255
-i=0
+	hoof = []
+	while(True):
+		ret, frame2 = cap.read()
+		if not(ret):
+			break
 
-while(True):
-	ret, frame2 = cap.read()
-	if not(ret):
-		break
+		nextImage = cv.cvtColor(frame2,cv.COLOR_BGR2GRAY)
+		flow = cv.calcOpticalFlowFarneback(prvsImage, nextImage, None, 0.5, 3, 7, 3, 5, 1.2, 0)
+		mag, ang = cv.cartToPolar(flow[...,0], flow[...,1])	
+		
+		# Create frame histogram
+		angRHS = mirrorAnglesRHS(ang)
+		frameHist = createHistogram(angRHS, mag, boundaries, bins)
+		
+		# Normalize the histogram to sum up to 1.
+		frameHist = frameHist/sum(bins)
+		hoof.append(frameHist)
 
-	nextImage = cv.cvtColor(frame2,cv.COLOR_BGR2GRAY)
-	flow = cv.calcOpticalFlowFarneback(prvsImage, nextImage, None, 0.5, 3, 7, 3, 5, 1.2, 0)
-	mag, ang = cv.cartToPolar(flow[...,0], flow[...,1])	
+		prvsImage = nextImage
+	cap.release()
+
+	hoof = numpy.array(hoof)
 	
-	# Create frame histogram
-	angRHS = mirrorAnglesRHS(ang)
-	frameHist = createHistogram(angRHS, mag, boundaries, bins)
-	
-	# Normalize the histogram to sum up to 1.
-	frameHist = frameHist/sum(bins)
-	hoof.append(frameHist)
-
-	# Plot frame histogram.
-	# hist = mpl.bar(boundaries[:numberOfBins], frameHist, align="edge", width=0.05)
-	# mpl.show(hist)
-
-	# # Visualization/HSV
-	# hsv[...,0] = ang*180/math.pi/2
-	# hsv[...,2] = cv.normalize(mag,None,0,255,cv.NORM_MINMAX)
-	# bgr = cv.cvtColor(hsv,cv.COLOR_HSV2BGR)
-	# cv.imshow('frame2',bgr)
-	# cv.waitKey(30)
-
-	# # Visualization/Quiver
-	# posX =numpy.arange(0, flow.shape[1], 2)
-	# posY =numpy.arange(flow.shape[0], 0, -2)
-	# quiv = mpl.quiver(posX, posY, flow[::2,::2,0], flow[::2,::2,1], scale=3e2)
-	# mpl.show(quiv)
-	
-	# # Save quiver plots to file
-	# mpl.savefig("test/test"+str(i)+".png", format="png", dpi=200)
-	# mpl.clf()
-	# i+=1
-
-	prvsImage = nextImage
-cap.release()
-cv.destroyAllWindows()
-
-hoof = numpy.array(hoof)
-tempMeanHOOF = numpy.mean(hoof, axis=0)
-
-hist = mpl.bar(boundaries[:numberOfBins], frameHist, align="edge", width=0.05)
-mpl.show(hist)
+	tempMeanHOOF = numpy.mean(hoof, axis=0)

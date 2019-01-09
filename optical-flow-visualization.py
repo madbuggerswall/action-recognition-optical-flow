@@ -37,3 +37,65 @@ def binBoundaries(numberOfBins):
 		binValues.append(boundary)
 	return binValues
 
+
+numberOfBins = 32
+boundaries = binBoundaries(numberOfBins)
+bins = numpy.zeros(numberOfBins)
+hoof = []
+
+cap = cv.VideoCapture("dataset/training/run/daria_run.avi")
+ret, frame1 = cap.read()
+prvsImage = cv.cvtColor(frame1,cv.COLOR_BGR2GRAY)
+
+hsv = numpy.zeros_like(frame1)
+hsv[...,1] = 255
+i=0
+
+while(True):
+	ret, frame2 = cap.read()
+	if not(ret):
+		break
+
+	nextImage = cv.cvtColor(frame2,cv.COLOR_BGR2GRAY)
+	flow = cv.calcOpticalFlowFarneback(prvsImage, nextImage, None, 0.5, 3, 7, 3, 5, 1.2, 0)
+	mag, ang = cv.cartToPolar(flow[...,0], flow[...,1])	
+	
+	# Create frame histogram
+	angRHS = mirrorAnglesRHS(ang)
+	frameHist = createHistogram(angRHS, mag, boundaries, bins)
+	
+	# Normalize the histogram to sum up to 1.
+	frameHist = frameHist/sum(bins)
+	hoof.append(frameHist)
+
+	# Plot frame histogram.
+	hist = mpl.bar(boundaries[:numberOfBins], frameHist, align="edge", width=0.05)
+	mpl.show(hist)
+
+	# # Visualization/HSV
+	# hsv[...,0] = ang*180/math.pi/2
+	# hsv[...,2] = cv.normalize(mag,None,0,255,cv.NORM_MINMAX)
+	# bgr = cv.cvtColor(hsv,cv.COLOR_HSV2BGR)
+	# cv.imshow('frame2',bgr)
+	# cv.waitKey(30)
+
+	# # Visualization/Quiver
+	# posX =numpy.arange(0, flow.shape[1], 2)
+	# posY =numpy.arange(flow.shape[0], 0, -2)
+	# quiv = mpl.quiver(posX, posY, flow[::2,::2,0], flow[::2,::2,1], scale=3e2)
+	# mpl.show(quiv)
+	
+	# # Save quiver plots to file
+	# mpl.savefig("outout-visuals/test"+str(i)+".png", format="png", dpi=200)
+	# mpl.clf()
+	# i+=1
+
+	prvsImage = nextImage
+cap.release()
+cv.destroyAllWindows()
+
+hoof = numpy.array(hoof)
+tempMeanHOOF = numpy.mean(hoof, axis=0)
+
+hist = mpl.bar(boundaries[:numberOfBins], frameHist, align="edge", width=0.05)
+mpl.show(hist)

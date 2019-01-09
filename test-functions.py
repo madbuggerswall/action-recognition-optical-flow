@@ -1,5 +1,6 @@
 import cv2
 import numpy
+import os
 
 class Degree:
 	def __init__(self, value):
@@ -90,17 +91,6 @@ class Degree:
 	def __str__(self):
 		return str(self.value)
 
-def testEllipsis():
-	testData = numpy.zeros(shape=(10,10))
-	print(testData)
-
-	for i in range(len(testData)):
-		for j in range(len(testData)):
-			testData[i,j] = i*10+j
-
-	print(testData)
-	print(testData[...,1])
-
 def dispOpticalFlow( Image,Flow,Divisor,name ):
 	PictureShape = numpy.shape(Image)
 	#determine number of quiver points there will be
@@ -123,3 +113,8 @@ def dispOpticalFlow( Image,Flow,Divisor,name ):
 	#print image
 	cv2.imshow(name,img)
 	return []
+
+trainingDirs = []
+for root, dirs, files in os.walk("dataset/training"):
+	for dirName in dirs:
+		trainingDirs.append(dirName)
