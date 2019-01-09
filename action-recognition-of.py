@@ -23,14 +23,17 @@ def mirrorAnglesRHS(degrees):
 				degreesRHS[i,j] = degreesRHS[i,j] - math.pi*2
 	return degreesRHS
 
+# Returns a numpy.ndarray
 def createHistogram(degrees, magnitudes, boundaries, bins):
 	for i in range(degrees.shape[0]):
 		for j in range(degrees.shape[1]):
 			for b in range(bins.shape[0]):
 				if(degrees[i,j] >= boundaries[b] and degrees[i,j] < boundaries[b+1]):
 					bins[b] += magnitudes[i,j]
+					break
 	return bins
 
+# Define bin boundaries according to number of bins.
 def binBoundaries(numberOfBins):
 	binValues = []
 	for i in range(numberOfBins+1):
@@ -38,9 +41,12 @@ def binBoundaries(numberOfBins):
 		binValues.append(boundary)
 	return binValues
 
+# Main
+
 numberOfBins = 32
 boundaries = binBoundaries(numberOfBins)
 bins = numpy.zeros(numberOfBins)
+hoof = []
 
 cap = cv.VideoCapture("dataset/run/daria_run.avi")
 ret, frame1 = cap.read()
@@ -49,10 +55,12 @@ prvsImage = cv.cvtColor(frame1,cv.COLOR_BGR2GRAY)
 hsv = numpy.zeros_like(frame1)
 hsv[...,1] = 255
 i=0
+
 while(True):
 	ret, frame2 = cap.read()
 	if not(ret):
 		break
+
 	nextImage = cv.cvtColor(frame2,cv.COLOR_BGR2GRAY)
 	flow = cv.calcOpticalFlowFarneback(prvsImage, nextImage, None, 0.5, 3, 7, 3, 5, 1.2, 0)
 	mag, ang = cv.cartToPolar(flow[...,0], flow[...,1])	
@@ -63,9 +71,11 @@ while(True):
 	
 	# Normalize the histogram to sum up to 1.
 	frameHist = frameHist/sum(bins)
+	hoof.append(frameHist)
 
-	hist = mpl.bar(boundaries[:numberOfBins], frameHist, align="edge", width=0.05)
-	mpl.show(hist)
+	# Plot frame histogram.
+	# hist = mpl.bar(boundaries[:numberOfBins], frameHist, align="edge", width=0.05)
+	# mpl.show(hist)
 
 	# # Visualization/HSV
 	# hsv[...,0] = ang*180/math.pi/2
@@ -89,3 +99,8 @@ while(True):
 cap.release()
 cv.destroyAllWindows()
 
+hoof = numpy.array(hoof)
+tempMeanHOOF = numpy.mean(hoof, axis=0)
+
+hist = mpl.bar(boundaries[:numberOfBins], frameHist, align="edge", width=0.05)
+mpl.show(hist)
