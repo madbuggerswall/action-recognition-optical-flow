@@ -120,7 +120,7 @@ for dirName in os.listdir(trainingPath):
 	if(dirName == ".DS_Store"):
 		continue
 	for fileName in os.listdir(os.path.join(trainingPath, dirName)):
-		if(dirName == ".DS_Store"):
+		if(fileName == ".DS_Store"):
 			continue
 		trainingDirs.append(os.path.join(dirName, fileName))
-print(trainingDirs)
+		print(os.path.join(dirName, fileName))
