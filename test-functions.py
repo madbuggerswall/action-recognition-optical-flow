@@ -115,6 +115,12 @@ def dispOpticalFlow( Image,Flow,Divisor,name ):
 	return []
 
 trainingDirs = []
-for root, dirs, files in os.walk("dataset/training"):
-	for dirName in dirs:
-		trainingDirs.append(dirName)
+trainingPath = "dataset/training"
+for dirName in os.listdir(trainingPath):
+	if(dirName == ".DS_Store"):
+		continue
+	for fileName in os.listdir(os.path.join(trainingPath, dirName)):
+		if(dirName == ".DS_Store"):
+			continue
+		trainingDirs.append(os.path.join(dirName, fileName))
+print(trainingDirs)

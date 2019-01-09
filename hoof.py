@@ -44,53 +44,27 @@ def binBoundaries(numberOfBins):
 		binValues.append(boundary)
 	return binValues
 
-bendTrainingpath =  "dataset/training/bend"
-jackTrainingpath = "dataset/training/jack"
-jumpTrainingpath = "dataset/training/jump"
-pjumpTrainingpath = "dataset/training/pjump"
-runTrainingpath = "dataset/training/run"
-sideTrainingpath = "dataset/training/side"
-skipTrainingpath = "dataset/training/skip"
-walkTrainingpath = "dataset/training/walk"
-wave1Trainingpath = "dataset/training/wave1"
-wave2Trainingpath = "dataset/training/wave2"
+trainingPath = "dataset/training"
+fileSavePath = "output-histograms"
 
-bendTrainingpaths = os.listdir(bendTrainingpath)
-jackTrainingpaths = os.listdir(jackTrainingpath)
-jumpTrainingpaths = os.listdir(jumpTrainingpath)
-pjumpTrainingpaths = os.listdir(pjumpTrainingpath)
-runTrainingpaths = os.listdir(runTrainingpath)
-sideTrainingpaths = os.listdir(sideTrainingpath)
-skipTrainingpaths = os.listdir(skipTrainingpath)
-walkTrainingpaths = os.listdir(walkTrainingpath)
-wave1Trainingpaths = os.listdir(wave1Trainingpath)
-wave2Trainingpaths = os.listdir(wave2Trainingpath)
-
-trainingPaths = []
-
-trainingPaths.append(bendTrainingpaths)
-trainingPaths.append(jackTrainingpaths)
-trainingPaths.append(jumpTrainingpaths)
-trainingPaths.append(pjumpTrainingpaths)
-trainingPaths.append(runTrainingpaths)
-trainingPaths.append(sideTrainingpaths)
-trainingPaths.append(skipTrainingpaths)
-trainingPaths.append(walkTrainingpaths)
-trainingPaths.append(wave1Trainingpaths)
-trainingPaths.append(wave2Trainingpaths)
-
-for path in trainingPaths:
-	path.remove(".DS_Store")
+trainingDirs = []
+for dirName in os.listdir(trainingPath):
+	if(dirName == ".DS_Store"):
+		continue
+	for fileName in os.listdir(os.path.join(trainingPath, dirName)):
+		if(dirName == ".DS_Store"):
+			continue
+		trainingDirs.append(os.path.join(dirName, fileName))
 
 # Main
 numberOfBins = 32
 boundaries = binBoundaries(numberOfBins)
 bins = numpy.zeros(numberOfBins)
-tempMeanHoofs = []
 
-for path in runTrainingpaths:
-	cap = cv.VideoCapture(runTrainingpath+"/"+path)
-	print(runTrainingpath+"/"+path)
+for videoPath in trainingDirs:
+	print(os.path.join(trainingPath, videoPath))
+	
+	cap = cv.VideoCapture(os.path.join(trainingPath, videoPath))
 	ret, frame1 = cap.read()
 	prvsImage = cv.cvtColor(frame1,cv.COLOR_BGR2GRAY)
 
@@ -100,6 +74,7 @@ for path in runTrainingpaths:
 		if not(ret):
 			break
 
+		# Calculate optical flow.
 		nextImage = cv.cvtColor(frame2,cv.COLOR_BGR2GRAY)
 		flow = cv.calcOpticalFlowFarneback(prvsImage, nextImage, None, 0.5, 3, 7, 3, 5, 1.2, 0)
 		mag, ang = cv.cartToPolar(flow[...,0], flow[...,1])	
@@ -116,5 +91,8 @@ for path in runTrainingpaths:
 	cap.release()
 
 	hoof = numpy.array(hoof)
-	
 	tempMeanHOOF = numpy.mean(hoof, axis=0)
+
+	# Saves the histogram in a file for later use.
+	savePath = os.path.join(fileSavePath, videoPath[:-4])
+	numpy.save(savePath+".npy", tempMeanHOOF)
