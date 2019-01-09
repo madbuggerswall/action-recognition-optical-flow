@@ -5,9 +5,6 @@ import cv2 as cv
 import numpy as numpy
 import matplotlib.pyplot as mpl
 
-from sklearn.decomposition import PCA
-from sklearn.preprocessing import StandardScaler
-
 #	Checks if the given angle is inside the 1st or 3rd quadrant.
 def isOnLeftHandSide(degree):
 	if degree > math.pi/2 and degree < math.pi*3/2:
