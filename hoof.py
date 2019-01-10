@@ -24,7 +24,7 @@ def mirrorAnglesRHS(degrees):
 				degreesRHS[i,j] = degreesRHS[i,j] - math.pi*2
 	return degreesRHS
 
-# Returns a numpy.ndarray
+# Returns a numpy.ndarray (HOOF)
 def createHistogram(degrees, magnitudes, boundaries, bins):
 	for i in range(degrees.shape[0]):
 		for j in range(degrees.shape[1]):
@@ -34,7 +34,7 @@ def createHistogram(degrees, magnitudes, boundaries, bins):
 					break
 	return bins
 
-# Define bin boundaries according to number of bins.
+# Returns a list consisting of bin edges.
 def binBoundaries(numberOfBins):
 	binValues = []
 	for i in range(numberOfBins+1):
@@ -42,40 +42,51 @@ def binBoundaries(numberOfBins):
 		binValues.append(boundary)
 	return binValues
 
+# Returns the list of videos to be analyzed.
+def initVideoPathList(directoryPath):
+	videoPaths = []
+	for dirName in os.listdir(directoryPath):
+		if(dirName == ".DS_Store"):
+			continue
+		if os.path.isfile(os.path.join(directoryPath, dirName)):
+			videoPaths.append(dirName)
+			continue
+		for fileName in os.listdir(os.path.join(directoryPath, dirName)):
+			if(fileName == ".DS_Store"):
+				continue
+			videoPaths.append(os.path.join(dirName, fileName))
+	return videoPaths
+
+
+# Main
+
+# If no arguments given go through training set.
 if len(sys.argv) == 1:
-	directoryPath = "dataset/training"
+	directoryPath = "dataset/training/run"
 	fileSavePath = "output-histograms"
 
+# Test set and desired histogram output directory for test set.
 if len(sys.argv) == 3:
 	directoryPath = sys.argv[1]
 	fileSavePath = sys.argv[2]
 
-trainingDirs = []
-for dirName in os.listdir(directoryPath):
-	if(dirName == ".DS_Store"):
-		continue
-	if os.path.isfile(os.path.join(directoryPath, dirName)):
-		trainingDirs.append(dirName)
-		continue
-	for fileName in os.listdir(os.path.join(directoryPath, dirName)):
-		if(fileName == ".DS_Store"):
-			continue
-		trainingDirs.append(os.path.join(dirName, fileName))
-
-# Main
+# Number of histogram bins to classify the angles.
 numberOfBins = 32
 boundaries = binBoundaries(numberOfBins)
+videoPaths = initVideoPathList(directoryPath)
 
-for videoPath in trainingDirs:
+for videoPath in videoPaths:
 	print(os.path.join(directoryPath, videoPath))
 	
-	bins = numpy.zeros(numberOfBins)
 	cap = cv.VideoCapture(os.path.join(directoryPath, videoPath))
 	ret, frame1 = cap.read()
 	prvsImage = cv.cvtColor(frame1,cv.COLOR_BGR2GRAY)
 
-	hoof = []
+	# Empty the list of histograms once a video.
+	hoofAllFrames = []
+	
 	while(True):
+		bins = numpy.zeros(numberOfBins)
 		ret, frame2 = cap.read()
 		if not(ret):
 			break
@@ -91,13 +102,13 @@ for videoPath in trainingDirs:
 		
 		# Normalize the histogram to sum up to 1.
 		frameHist = frameHist/sum(frameHist)
-		hoof.append(frameHist)
+		hoofAllFrames.append(frameHist)
 
 		prvsImage = nextImage
 	cap.release()
 
-	hoof = numpy.array(hoof)
-	tempMeanHOOF = numpy.mean(hoof, axis=0)
+	hoofAllFrames = numpy.array(hoofAllFrames)
+	tempMeanHOOF = numpy.mean(hoofAllFrames, axis=0)
 
 	# Saves the histogram in a file for later use.
 	savePath = os.path.join(fileSavePath, videoPath[:-4])

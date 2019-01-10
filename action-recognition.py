@@ -11,6 +11,19 @@ from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 from sklearn.neighbors import KNeighborsClassifier
 
+# WARNING: This script should be in the same folder with /output-histograms.
+# /output-histograms consists of precalculated histograms of optical flow.
+# All HOOFs took 142 minutes to be calculated.
+
+# TODO/DONE: Apply PCA to the datasets seperately (n_components=2)
+# Seperately applied PCA was not good for clusters.
+# TODO/DONE: Apply PCA to one dataset standart scale seperately (n_components=2).
+# Seperately standard scaled HOOFs was not good for clusters.
+# TODO/DONE: Apply PCA to the datasets seperatly preserving the variance at 90%.
+# Resulting PC lists has different dimensions hence the concatenation fails.
+# TODO/DONE: Apply Test STD Scaling PCA with whole dataset.
+# K-NN accuracy increased to 20% from 0% :)
+
 # For K-NN
 class Label(IntEnum):
 	BEND = 0
@@ -24,6 +37,7 @@ class Label(IntEnum):
 	WAVE1 = 8
 	WAVE2 = 9
 
+# Returns a list consisting of bin edges.
 def binBoundaries(numberOfBins):
 	binValues = []
 	for i in range(numberOfBins+1):
@@ -31,6 +45,7 @@ def binBoundaries(numberOfBins):
 		binValues.append(boundary)
 	return binValues
 
+# Returns a list consisting of every file path in given directory.
 def initPathList(path):
 	pathList = []
 	for fileName in os.listdir(path):
@@ -39,12 +54,14 @@ def initPathList(path):
 		pathList.append(os.path.join(path,fileName))
 	return pathList
 
+# Load all HOOFs inside a directory into a list.
 def loadHOOF(pathList):
 	dirHOOFs = []
 	for filePath in pathList:
 		dirHOOFs.append(numpy.load(filePath))
 	return dirHOOFs
 
+# Returns a list of numeric labels for K-NN
 def initLabelList():
 	labels = []
 	for _ in bendHOOFs:
@@ -69,11 +86,16 @@ def initLabelList():
 		labels.append(int(Label.WAVE2))
 	return labels
 
+# Visualizing histogram sets. For inspection purposes.
+def plotHistograms(hoofs):
+	numberOfBins = 32
+	boundaries = binBoundaries(numberOfBins)
+	for i in range(len(hoofs)):
+		hist = mpl.bar(boundaries[:numberOfBins], hoofs[i], align="edge", width=0.05)
+		mpl.show(hist)
+
 
 #	Main 
-
-numberOfBins = 32
-boundaries = binBoundaries(numberOfBins)
 
 # Paths of training histogram directories
 bendPath = "output-histograms/bend"
@@ -120,28 +142,16 @@ wave2HOOFs = loadHOOF(wave2HistPaths)
 # Histograms of test videos
 testHOOFs = loadHOOF(testHistPaths)
 
+plotHistograms(runHOOFs)
 
+# Creates a list of labels for training set.
 labels = initLabelList()
-print(labels)
-
-# for i in range(len(bendHOOFs)):
-# 	hist = mpl.bar(boundaries[:numberOfBins], pjumpHOOFs[i], align="edge", width=0.05)
-# 	mpl.show(hist)
-
-# DONE: Apply PCA to the datasets seperately (n_components=2)
-# Seperately applied PCA did not good for clusters.
-# DONE: Apply PCA to one dataset standart scale seperately (n_components=2).
-# Seperately standard scaled HOOFs did not good for clusters.
-# DONE: Apply PCA to the datasets seperatly preserving the variance at 90%.
-# Resulting PC lists has different dimensions hence the concatenation fails.
-# UNKNOWN: Representing a dataset with smaller datasets with different dimensions.
-# TODO: Apply Test STD Scaling PCA with whole dataset.
 
 allHOOFs = numpy.concatenate((bendHOOFs, jackHOOFs, jumpHOOFs, pjumpHOOFs, 
 runHOOFs, sideHOOFs, skipHOOFs, walkHOOFs, wave1HOOFs, wave2HOOFs, testHOOFs))
 print("allHOOfs shape:",allHOOFs.shape)
 
-
+# Scale all histograms for PCA.
 allHOOFStdScaled = StandardScaler().fit_transform(allHOOFs)
 
 pca = PCA(.90)
@@ -151,40 +161,24 @@ print("allPCs shape:", allPCs.shape)
 print("Component variances:", pca.explained_variance_ratio_)
 print("Total preserved variance:", sum(pca.explained_variance_ratio_))
 
+# Split all PCs into training set and test set.
 trainingPCs = allPCs[:-len(testHOOFs)]
-print(trainingPCs.shape)
 testPCs = allPCs[-len(testHOOFs):]
-print(testPCs.shape)
 
-knnModel = KNeighborsClassifier(n_neighbors=int(sys.argv[1]))
+# Train the model.
+knnModel = KNeighborsClassifier(n_neighbors=5)
 knnModel.fit(trainingPCs, labels)
 
-predicted = knnModel.predict(testPCs[0].reshape(1,-1))
-print(predicted)
-predicted = knnModel.predict(testPCs[1].reshape(1,-1))
-print(predicted)
-predicted = knnModel.predict(testPCs[2].reshape(1,-1))
-print(predicted)
-predicted = knnModel.predict(testPCs[3].reshape(1,-1))
-print(predicted)
-predicted = knnModel.predict(testPCs[4].reshape(1,-1))
-print(predicted)
-predicted = knnModel.predict(testPCs[5].reshape(1,-1))
-print(predicted)
-predicted = knnModel.predict(testPCs[6].reshape(1,-1))
-print(predicted)
-predicted = knnModel.predict(testPCs[7].reshape(1,-1))
-print(predicted)
-predicted = knnModel.predict(testPCs[8].reshape(1,-1))
-print(predicted)
-predicted = knnModel.predict(testPCs[9].reshape(1,-1))
-print(predicted)
+# Predict for all test histograms.
+for i in range(len(testPCs)):
+	predicted = knnModel.predict([testPCs[i]])
+	print("Test data:", str(Label(i))[6:], "- Prediction:", str(Label(predicted))[6:], "\t", predicted==i)
 
 # Visualize the 5D data on 2D plane by the first 2 columns. 
-# fig = mpl.figure()
-# ax1 = fig.add_subplot(111)
+fig = mpl.figure()
+ax1 = fig.add_subplot(111)
 
-# ax1.scatter(allPCs[:,0], allPCs[:,1], s=10, c='b', marker="s", label='first')
-# ax1.scatter(testPCs[:,0],testPCs[:,1], s=10, c='r', marker="o", label='second')
-# mpl.legend(loc='upper left')
-# mpl.show()
+ax1.scatter(trainingPCs[:,0], trainingPCs[:,1], s=10, c='b', marker="s", label='Training')
+ax1.scatter(testPCs[:,0],testPCs[:,1], s=10, c='r', marker="o", label='Test')
+mpl.legend(loc='upper left')
+mpl.show()
