@@ -64,15 +64,19 @@ walkHOOFs = loadHOOF(walkHistPaths)
 wave1HOOFs = loadHOOF(wave1HistPaths)
 wave2HOOFs = loadHOOF(wave2HistPaths)
 
-for i in range(len(bendHOOFs)):
-	hist = mpl.bar(boundaries[:numberOfBins], bendHOOFs[i], align="edge", width=0.05)
-	mpl.show(hist)
+# for i in range(len(bendHOOFs)):
+# 	hist = mpl.bar(boundaries[:numberOfBins], pjumpHOOFs[i], align="edge", width=0.05)
+# 	mpl.show(hist)
 
-allPCs = numpy.concatenate((bendHOOFs, jackHOOFs, jumpHOOFs, pjumpHOOFs, runHOOFs, sideHOOFs, skipHOOFs, walkHOOFs, wave1HOOFs, wave2HOOFs))
-allPCsSTD = StandardScaler().fit_transform(allPCs)
+# TODO: Apply PCA to the datasets seperately
+allHOOFs = numpy.concatenate((bendHOOFs, jackHOOFs, jumpHOOFs, pjumpHOOFs, runHOOFs, sideHOOFs, skipHOOFs, walkHOOFs, wave1HOOFs, wave2HOOFs))
+allPCsSTD = StandardScaler().fit_transform(allHOOFs)
+
 pca = PCA(n_components=2)
+pca = pca.fit(allPCsSTD)
+print(pca.explained_variance_ratio_)
 allPCsSTD = pca.fit_transform(allPCsSTD)
-print(allPCsSTD)
+
 # print(allPCs[:,0])
 pcScatter = mpl.scatter(allPCsSTD[:,0], allPCsSTD[:,1])
 mpl.show(pcScatter)
