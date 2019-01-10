@@ -114,13 +114,25 @@ def dispOpticalFlow( Image,Flow,Divisor,name ):
 	cv2.imshow(name,img)
 	return []
 
-trainingDirs = []
-trainingPath = "dataset/training"
-for dirName in os.listdir(trainingPath):
-	if(dirName == ".DS_Store"):
-		continue
-	for fileName in os.listdir(os.path.join(trainingPath, dirName)):
-		if(fileName == ".DS_Store"):
-			continue
-		trainingDirs.append(os.path.join(dirName, fileName))
-		print(os.path.join(dirName, fileName))
+# trainingDirs = []
+# trainingPath = "dataset/training"
+# for dirName in os.listdir(trainingPath):
+# 	if(dirName == ".DS_Store"):
+# 		continue
+# 	for fileName in os.listdir(os.path.join(trainingPath, dirName)):
+# 		if(fileName == ".DS_Store"):
+# 			continue
+# 		trainingDirs.append(os.path.join(dirName, fileName))
+# 		print(os.path.join(dirName, fileName))
+
+tester = numpy.arange(20)
+tester = tester.reshape(10,2)
+print(tester)
+print("[3:]")
+print(tester[3:])
+print("[-3:]")
+print(tester[-3:])
+print("[:3]")
+print(tester[:3])
+print("[:-3]")
+print(tester[:-3])

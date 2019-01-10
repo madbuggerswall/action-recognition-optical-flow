@@ -1,5 +1,6 @@
 import os
 import math
+import sys
 from enum import IntEnum
 
 import numpy
@@ -134,34 +135,29 @@ print(labels)
 # DONE: Apply PCA to the datasets seperatly preserving the variance at 90%.
 # Resulting PC lists has different dimensions hence the concatenation fails.
 # UNKNOWN: Representing a dataset with smaller datasets with different dimensions.
+# TODO: Apply Test STD Scaling PCA with whole dataset.
 
 allHOOFs = numpy.concatenate((bendHOOFs, jackHOOFs, jumpHOOFs, pjumpHOOFs, 
-runHOOFs, sideHOOFs, skipHOOFs, walkHOOFs, wave1HOOFs, wave2HOOFs))
+runHOOFs, sideHOOFs, skipHOOFs, walkHOOFs, wave1HOOFs, wave2HOOFs, testHOOFs))
 print("allHOOfs shape:",allHOOFs.shape)
 
 
 allHOOFStdScaled = StandardScaler().fit_transform(allHOOFs)
-testHOOFStdScaled = StandardScaler().fit_transform(testHOOFs)
 
-pcaTraining = PCA(.90)
-allPCs = pcaTraining.fit_transform(allHOOFStdScaled)
+pca = PCA(.90)
+allPCs = pca.fit_transform(allHOOFStdScaled)
 
-print("Training / allPCs shape:", allPCs.shape)
-print("Training / Component variances:", pcaTraining.explained_variance_ratio_)
-print("Training / Total preserved variance:", sum(pcaTraining.explained_variance_ratio_))
+print("allPCs shape:", allPCs.shape)
+print("Component variances:", pca.explained_variance_ratio_)
+print("Total preserved variance:", sum(pca.explained_variance_ratio_))
 
-# Minimum of 90% reserved variance resulted as 3 components.
-# Manually take 5 components to avoid dimension problems.
+trainingPCs = allPCs[:-len(testHOOFs)]
+print(trainingPCs.shape)
+testPCs = allPCs[-len(testHOOFs):]
+print(testPCs.shape)
 
-pcaTest = PCA(n_components=5)
-testPCs = pcaTest.fit_transform(testHOOFStdScaled)
-
-print("Test / testPCs shape:", testPCs.shape)
-print("Test / Component variances:", pcaTest.explained_variance_ratio_)
-print("Test / Total preserved variance:", sum(pcaTest.explained_variance_ratio_))
-
-knnModel = KNeighborsClassifier(n_neighbors=3)
-knnModel.fit(allPCs, labels)
+knnModel = KNeighborsClassifier(n_neighbors=int(sys.argv[1]))
+knnModel.fit(trainingPCs, labels)
 
 predicted = knnModel.predict(testPCs[0].reshape(1,-1))
 print(predicted)
@@ -184,12 +180,11 @@ print(predicted)
 predicted = knnModel.predict(testPCs[9].reshape(1,-1))
 print(predicted)
 
-
 # Visualize the 5D data on 2D plane by the first 2 columns. 
-fig = mpl.figure()
-ax1 = fig.add_subplot(111)
+# fig = mpl.figure()
+# ax1 = fig.add_subplot(111)
 
-ax1.scatter(allPCs[:,0], allPCs[:,1], s=10, c='b', marker="s", label='first')
-ax1.scatter(testPCs[:,0],testPCs[:,1], s=10, c='r', marker="o", label='second')
-mpl.legend(loc='upper left')
-mpl.show()
+# ax1.scatter(allPCs[:,0], allPCs[:,1], s=10, c='b', marker="s", label='first')
+# ax1.scatter(testPCs[:,0],testPCs[:,1], s=10, c='r', marker="o", label='second')
+# mpl.legend(loc='upper left')
+# mpl.show()
