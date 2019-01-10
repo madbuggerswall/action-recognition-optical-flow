@@ -64,9 +64,19 @@ walkHOOFs = loadHOOF(walkHistPaths)
 wave1HOOFs = loadHOOF(wave1HistPaths)
 wave2HOOFs = loadHOOF(wave2HistPaths)
 
+# for i in range(len(bendHOOFs)):
+# 	hist = mpl.bar(boundaries[:numberOfBins], bendHOOFs[i], align="edge", width=0.05)
+# 	mpl.show(hist)
 
+pca = PCA(n_components=2)
 
-
-for i in range(len(bendHOOFs)):
-	hist = mpl.bar(boundaries[:numberOfBins], bendHOOFs[i], align="edge", width=0.05)
-	mpl.show(hist)
+bendPC = pca.fit_transform(bendHOOFs)
+jackPC = pca.fit_transform(jackHOOFs)
+jumpPC = pca.fit_transform(jumpHOOFs)
+pjumpPC = pca.fit_transform(pjumpHOOFs)
+runPC = pca.fit_transform(runHOOFs)
+sidePC = pca.fit_transform(sideHOOFs)
+skipPC = pca.fit_transform(skipHOOFs)
+walkPC = pca.fit_transform(walkHOOFs)
+wave1PC = pca.fit_transform(wave1HOOFs)
+wave2PC = pca.fit_transform(wave2HOOFs)
