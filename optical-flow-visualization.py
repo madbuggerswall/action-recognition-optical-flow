@@ -12,13 +12,14 @@ def isOnLeftHandSide(degree):
 
 # Mirrors the angles inside the 1st & 3rd quadrant along Y-axis
 def mirrorAnglesRHS(degrees):
-	for i in range(degrees.shape[0]):
-		for j in range(degrees.shape[1]):
-			if isOnLeftHandSide(degrees[i,j]):
-				degrees[i,j] = math.pi-degrees[i,j]
-			if degrees[i,j] >= math.pi*3/2:
-				degrees[i,j] = degrees[i,j] - math.pi*2
-	return degrees
+	degreesRHS = numpy.array(degrees)
+	for i in range(degreesRHS.shape[0]):
+		for j in range(degreesRHS.shape[1]):
+			if isOnLeftHandSide(degreesRHS[i,j]):
+				degreesRHS[i,j] = math.pi-degreesRHS[i,j]
+			if degreesRHS[i,j] >= math.pi*3/2:
+				degreesRHS[i,j] = degreesRHS[i,j] - math.pi*2
+	return degreesRHS
 
 # Returns a numpy.ndarray
 def createHistogram(degrees, magnitudes, boundaries, bins):
@@ -43,7 +44,7 @@ boundaries = binBoundaries(numberOfBins)
 bins = numpy.zeros(numberOfBins)
 hoof = []
 
-cap = cv.VideoCapture("dataset/training/run/daria_run.avi")
+cap = cv.VideoCapture("dataset/training/jump/daria_jump.avi")
 ret, frame1 = cap.read()
 prvsImage = cv.cvtColor(frame1,cv.COLOR_BGR2GRAY)
 
@@ -72,18 +73,18 @@ while(True):
 	hist = mpl.bar(boundaries[:numberOfBins], frameHist, align="edge", width=0.05)
 	mpl.show(hist)
 
-	# # Visualization/HSV
-	# hsv[...,0] = ang*180/math.pi/2
-	# hsv[...,2] = cv.normalize(mag,None,0,255,cv.NORM_MINMAX)
-	# bgr = cv.cvtColor(hsv,cv.COLOR_HSV2BGR)
-	# cv.imshow('frame2',bgr)
+	# Visualization/HSV
+	hsv[...,0] = ang*180/math.pi/2
+	hsv[...,2] = cv.normalize(mag,None,0,255,cv.NORM_MINMAX)
+	bgr = cv.cvtColor(hsv,cv.COLOR_HSV2BGR)
+	cv.imshow('frame2',bgr)
 	# cv.waitKey(30)
 
-	# # Visualization/Quiver
-	# posX =numpy.arange(0, flow.shape[1], 2)
-	# posY =numpy.arange(flow.shape[0], 0, -2)
-	# quiv = mpl.quiver(posX, posY, flow[::2,::2,0], flow[::2,::2,1], scale=3e2)
-	# mpl.show(quiv)
+	# Visualization/Quiver
+	posX =numpy.arange(0, flow.shape[1], 2)
+	posY =numpy.arange(flow.shape[0], 0, -2)
+	quiv = mpl.quiver(posX, posY, flow[::2,::2,0], flow[::2,::2,1], scale=3e2)
+	mpl.show(quiv)
 	
 	# # Save quiver plots to file
 	# mpl.savefig("outout-visuals/test"+str(i)+".png", format="png", dpi=200)
@@ -93,9 +94,3 @@ while(True):
 	prvsImage = nextImage
 cap.release()
 cv.destroyAllWindows()
-
-hoof = numpy.array(hoof)
-tempMeanHOOF = numpy.mean(hoof, axis=0)
-
-hist = mpl.bar(boundaries[:numberOfBins], frameHist, align="edge", width=0.05)
-mpl.show(hist)

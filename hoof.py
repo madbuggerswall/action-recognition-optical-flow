@@ -56,11 +56,11 @@ for dirName in os.listdir(trainingPath):
 # Main
 numberOfBins = 32
 boundaries = binBoundaries(numberOfBins)
-bins = numpy.zeros(numberOfBins)
 
 for videoPath in trainingDirs:
 	print(os.path.join(trainingPath, videoPath))
 	
+	bins = numpy.zeros(numberOfBins)
 	cap = cv.VideoCapture(os.path.join(trainingPath, videoPath))
 	ret, frame1 = cap.read()
 	prvsImage = cv.cvtColor(frame1,cv.COLOR_BGR2GRAY)
@@ -81,7 +81,7 @@ for videoPath in trainingDirs:
 		frameHist = createHistogram(angRHS, mag, boundaries, bins)
 		
 		# Normalize the histogram to sum up to 1.
-		frameHist = frameHist/sum(bins)
+		frameHist = frameHist/sum(frameHist)
 		hoof.append(frameHist)
 
 		prvsImage = nextImage
