@@ -3,6 +3,7 @@ import math
 
 import numpy
 import matplotlib.pyplot as mpl
+from mpl_toolkits.mplot3d import Axes3D
 
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
@@ -68,19 +69,26 @@ wave2HOOFs = loadHOOF(wave2HistPaths)
 # 	hist = mpl.bar(boundaries[:numberOfBins], pjumpHOOFs[i], align="edge", width=0.05)
 # 	mpl.show(hist)
 
-# DONE: Apply PCA to the datasets seperately
+# DONE: Apply PCA to the datasets seperately (n_components=2)
 # Seperately applied PCA did not good for clusters.
-# DONE: Apply PCA to one dataset standart scale seperately.
+# DONE: Apply PCA to one dataset standart scale seperately (n_components=2).
 # Seperately standard scaled HOOFs did not good for clusters.
-# TODO Apply PCA to the datasets seperatl
+# DONE: Apply PCA to the datasets seperatly preserving the variance at 90%.
+# Resulting PC lists has different dimensions hence the concatenation fails.
+# UNKNOWN: Representing a dataset with smaller datasets with different dimensions.
 
-allHOOFs = numpy.concatenate((bendHOOFs, jackHOOFs, jumpHOOFs, pjumpHOOFs, runHOOFs, sideHOOFs, skipHOOFs, walkHOOFs, wave1HOOFs, wave2HOOFs))
+allHOOFs = numpy.concatenate((bendHOOFs, jackHOOFs, jumpHOOFs, pjumpHOOFs, 
+runHOOFs, sideHOOFs, skipHOOFs, walkHOOFs, wave1HOOFs, wave2HOOFs))
 
 allHOOFStdScaled = StandardScaler().fit_transform(allHOOFs)
-print(allHOOFs.shape)
+print("allHOOfs shape:",allHOOFs.shape)
 pca = PCA(.90)
 allPCs = pca.fit_transform(allHOOFStdScaled)
-print(sum(pca.explained_variance_ratio_))
+print("allPCs shape:", allPCs.shape)
+
+print("Component variances:", pca.explained_variance_ratio_)
+print("Total preserved variance:", sum(pca.explained_variance_ratio_))
+
 # print(allPCs[:,0])
 pcScatter = mpl.scatter(allPCs[:,0], allPCs[:,1])
 mpl.show(pcScatter)

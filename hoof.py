@@ -1,4 +1,5 @@
 import math
+import sys
 import os
 
 import cv2 as cv
@@ -41,14 +42,22 @@ def binBoundaries(numberOfBins):
 		binValues.append(boundary)
 	return binValues
 
-trainingPath = "dataset/training"
-fileSavePath = "output-histograms"
+if len(sys.argv) == 1:
+	directoryPath = "dataset/training"
+	fileSavePath = "output-histograms"
+
+if len(sys.argv) == 3:
+	directoryPath = sys.argv[1]
+	fileSavePath = sys.argv[2]
 
 trainingDirs = []
-for dirName in os.listdir(trainingPath):
+for dirName in os.listdir(directoryPath):
 	if(dirName == ".DS_Store"):
 		continue
-	for fileName in os.listdir(os.path.join(trainingPath, dirName)):
+	if os.path.isfile(os.path.join(directoryPath, dirName)):
+		trainingDirs.append(dirName)
+		continue
+	for fileName in os.listdir(os.path.join(directoryPath, dirName)):
 		if(fileName == ".DS_Store"):
 			continue
 		trainingDirs.append(os.path.join(dirName, fileName))
@@ -58,10 +67,10 @@ numberOfBins = 32
 boundaries = binBoundaries(numberOfBins)
 
 for videoPath in trainingDirs:
-	print(os.path.join(trainingPath, videoPath))
+	print(os.path.join(directoryPath, videoPath))
 	
 	bins = numpy.zeros(numberOfBins)
-	cap = cv.VideoCapture(os.path.join(trainingPath, videoPath))
+	cap = cv.VideoCapture(os.path.join(directoryPath, videoPath))
 	ret, frame1 = cap.read()
 	prvsImage = cv.cvtColor(frame1,cv.COLOR_BGR2GRAY)
 
