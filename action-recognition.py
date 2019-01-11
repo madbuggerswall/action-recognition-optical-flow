@@ -142,7 +142,8 @@ wave2HOOFs = loadHOOF(wave2HistPaths)
 # Histograms of test videos
 testHOOFs = loadHOOF(testHistPaths)
 
-plotHistograms(runHOOFs)
+# Plot histograms for inspection purposes.
+# plotHistograms(runHOOFs)
 
 # Creates a list of labels for training set.
 labels = initLabelList()

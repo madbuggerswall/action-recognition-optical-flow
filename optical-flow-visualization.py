@@ -1,6 +1,8 @@
+import math
+import os
+
 import cv2 as cv
 import numpy 
-import math
 import matplotlib.pyplot as mpl
 
 #	Checks if the given angle is inside the 1st or 3rd quadrant.
@@ -38,59 +40,92 @@ def binBoundaries(numberOfBins):
 		binValues.append(boundary)
 	return binValues
 
+# Returns a list of the first videos in the folders. (Alphabetically)
+def getVideoPaths():
+	videoPaths = []
+	datasetPath = "dataset/training"
+	dirNames = os.listdir(datasetPath)
+	dirNames.sort()
+	for dirName in dirNames:
+		dirPath = os.path.join(datasetPath, dirName)
+		if os.path.isdir(dirPath):
+			fileNames = os.listdir(dirPath)
+			fileNames.sort()
+			for fileName in fileNames:
+				if fileName == ".DS_Store":
+					continue
+				videoPaths.append(os.path.join(dirPath,fileName))
+				break
+	return videoPaths
+
+# Main
 
 numberOfBins = 32
 boundaries = binBoundaries(numberOfBins)
-bins = numpy.zeros(numberOfBins)
-hoof = []
 
-cap = cv.VideoCapture("dataset/training/jump/daria_jump.avi")
-ret, frame1 = cap.read()
-prvsImage = cv.cvtColor(frame1,cv.COLOR_BGR2GRAY)
+videoPaths = getVideoPaths()
+outputRoot = "output-visuals"
 
-hsv = numpy.zeros_like(frame1)
-hsv[...,1] = 255
-i=0
+for videoPath in videoPaths:
+	# Create visual output folder
+	outputDir = os.path.basename(os.path.dirname(videoPath))
+	outputDirPath = os.path.join(outputRoot, outputDir)
+	if not(os.path.exists(outputDirPath)):
+		os.makedirs(outputDirPath)
 
-while(True):
-	ret, frame2 = cap.read()
-	if not(ret):
-		break
+	videoName = os.path.splitext(os.path.basename(videoPath))[0]
+	outputPath = os.path.join(outputDirPath, videoName)
 
-	nextImage = cv.cvtColor(frame2,cv.COLOR_BGR2GRAY)
-	flow = cv.calcOpticalFlowFarneback(prvsImage, nextImage, None, 0.5, 3, 7, 3, 5, 1.2, 0)
-	mag, ang = cv.cartToPolar(flow[...,0], flow[...,1])	
+	# First frame for optical flow.
+	cap = cv.VideoCapture(videoPath)
+	ret, frame1 = cap.read()
+	prvsImage = cv.cvtColor(frame1,cv.COLOR_BGR2GRAY)
+
+	# For HSV visualization.
+	hsv = numpy.zeros_like(frame1)
+	hsv[...,1] = 255
 	
-	# Create frame histogram
-	angRHS = mirrorAnglesRHS(ang)
-	frameHist = createHistogram(angRHS, mag, boundaries, bins)
-	
-	# Normalize the histogram to sum up to 1.
-	frameHist = frameHist/sum(bins)
-	hoof.append(frameHist)
+	# Get the first five frames of the video.
+	for i in range(5):
+		bins = numpy.zeros(numberOfBins)
 
-	# Plot frame histogram.
-	hist = mpl.bar(boundaries[:numberOfBins], frameHist, align="edge", width=0.05)
-	mpl.show(hist)
+		ret, frame2 = cap.read()
+		# Write to file
+		cv.imwrite(outputPath+str(i)+".png", frame2)
+		if not(ret):
+			break
 
-	# Visualization/HSV
-	hsv[...,0] = ang*180/math.pi/2
-	hsv[...,2] = cv.normalize(mag,None,0,255,cv.NORM_MINMAX)
-	bgr = cv.cvtColor(hsv,cv.COLOR_HSV2BGR)
-	cv.imshow('frame2',bgr)
-	# cv.waitKey(30)
+		#	Optical flow.
+		nextImage = cv.cvtColor(frame2,cv.COLOR_BGR2GRAY)
+		flow = cv.calcOpticalFlowFarneback(prvsImage, nextImage, None, 0.5, 3, 7, 3, 5, 1.2, 0)
+		mag, ang = cv.cartToPolar(flow[...,0], flow[...,1])	
+		
+		# Create frame histogram
+		angRHS = mirrorAnglesRHS(ang)
+		frameHist = createHistogram(angRHS, mag, boundaries, bins)
+		
+		# Normalize the histogram to sum up to 1.
+		frameHist = frameHist/sum(bins)
 
-	# Visualization/Quiver
-	posX =numpy.arange(0, flow.shape[1], 2)
-	posY =numpy.arange(flow.shape[0], 0, -2)
-	quiv = mpl.quiver(posX, posY, flow[::2,::2,0], flow[::2,::2,1], scale=3e2)
-	mpl.show(quiv)
-	
-	# # Save quiver plots to file
-	# mpl.savefig("outout-visuals/test"+str(i)+".png", format="png", dpi=200)
-	# mpl.clf()
-	# i+=1
+		# Visualization/Histogram & File output
+		hist = mpl.bar(boundaries[:numberOfBins], frameHist, align="edge", width=0.05)
+		# Write to file
+		mpl.savefig(outputPath+"HOOF"+str(i)+".png", format="png", dpi=200)
+		mpl.clf()
 
-	prvsImage = nextImage
-cap.release()
-cv.destroyAllWindows()
+		# Visualization/HSV & File output
+		hsv[...,0] = ang*180/math.pi/2
+		hsv[...,2] = cv.normalize(mag,None,0,255,cv.NORM_MINMAX)
+		opFlowHSV = cv.cvtColor(hsv,cv.COLOR_HSV2RGB)
+		# Write to file
+		cv.imwrite(outputPath+"HSV"+str(i)+".png", opFlowHSV)
+
+		# Visualization/Quiver & File output
+		posX =numpy.arange(0, flow.shape[1], 2)
+		posY =numpy.arange(flow.shape[0], 0, -2)
+		quiv = mpl.quiver(posX, posY, flow[::2,::2,0], flow[::2,::2,1], scale=3e2)
+		mpl.savefig(outputPath+"QUIV"+str(i)+".png", format="png", dpi=200)
+		mpl.clf()
+		
+		prvsImage = nextImage
+	cap.release()
